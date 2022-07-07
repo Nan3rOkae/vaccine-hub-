@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "keywords": [],
-  "description": "",
   "dependencies": {
     "bcrypt": "^5.0.1",
     "colors": "^1.4.0",
@@ -20,5 +19,6 @@
     "nodemon": "^2.0.19",
     "pg": "^8.7.3",
     "psql": "^0.0.1"
-  }
+  },
+  "description": ""
 }
