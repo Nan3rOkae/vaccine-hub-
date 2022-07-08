@@ -30,8 +30,10 @@ class NotFoundError extends ExpressError {
   }
 }
 
-(module.exports = ExpressError),
+module.exports = {
+  ExpressError,
   BadRequestError,
   UnauthorizedError,
   ForbiddenError,
-  NotFoundError;
+  NotFoundError,
+};
