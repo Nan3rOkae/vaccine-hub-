@@ -1,45 +1,41 @@
-const bcrypt = require("bcrypt");
-const db = require("../db");
-const { BCRYPT_WORK_FACTOR } = require("../config");
 const { UnauthorizedError, BadRequestError } = require("../utils/errors");
-
+const bcrypt = require("bcrypt");
+const { BCRYPT_WORK_FACTOR } = require("../config");
+const db = require("../db");
 class User {
   static async makePublicUser(user) {
     return {
+      id: user.id,
       first_name: user.first_name,
       last_name: user.last_name,
-      location: user.location,
       email: user.email,
-      password: user.password,
       date: user.date,
     };
   }
   static async login(credentials) {
-    //user shoul dsubit their email and password
-    // if any of these fields are missing, throw an error
-    const requiredFields = ["username", "password"];
+    const requiredFields = ["email", "password"];
+
     requiredFields.forEach((field) => {
       if (!credentials.hasOwnProperty(field)) {
-        throw new BadRequestError(`Missing ${field} in request body`);
+        throw new BadRequestError(`Missing ${field} in request body.`);
       }
     });
-    // lookup the user in the db by email
+
     const user = await User.fetchUserByEmail(credentials.email);
-    // if a user is found, compare the submitted password
-    //with the passsword in the db
-    // if there is a match, return the user
+
     if (user) {
-      const valid = await bcrypt.compare(credentials.password, user.password);
+      const isValid = await bcrypt.compare(credentials.password, user.password);
       if (isValid) {
         return User.makePublicUser(user);
       }
     }
-    //if any of this fors wrong, throw an error
-    throw new UnauthorizedError("Invalid email/password combo");
+
+    throw new UnauthorizedError("Invalid email/password");
   }
+
   static async register(credentials) {
-    //user shoul dsubmit their email, pw, rsvp sttus, and # of guests
-    // if any of thwse filds are missing,
+    //user should submit their email and pw
+    //If any of these fields are missing, throw an error
     const requiredFields = [
       "first_name",
       "last_name",
@@ -48,28 +44,28 @@ class User {
       "password",
       "date",
     ];
+
     requiredFields.forEach((field) => {
       if (!credentials.hasOwnProperty(field)) {
-        throw new BadRequestError(`Missing ${field} in request body`);
+        throw new BadRequestError(`Missing ${field} in request body...`);
       }
     });
-    if (credentials.email.indexOf("0") <= 0) {
-      throw new BadRequestError("Invalid email.");
-    }
-    // make sure no user already exists in the system with that email
+
+    //make sure no user already exists in the database with that email
     //if one does, throw an error
     const existingUser = await User.fetchUserByEmail(credentials.email);
     if (existingUser) {
-      throw new BadRequestError(`Duplicate email: ${credentials.email}`);
+      throw new BadRequestError("Duplicate email: ", credentials.email);
     }
-    // take the users password, and hash it
+    //take the user's password and hash it
+    //take hte user's email and lowercase it
+    const lowercasedEmail = credentials.email.toLowerCase();
+    //create a new user with in the db with their info
     const hashedPassword = await bcrypt.hash(
       credentials.password,
       BCRYPT_WORK_FACTOR
     );
-    // take the users email, and lowercase it
-    const lowercasedEmail = credentials.email.toLowerCase();
-    // create a new user in the db with all their info
+
     const result = await db.query(
       `
     INSERT INTO users(
@@ -92,19 +88,20 @@ class User {
         credentials.date,
       ]
     );
-    // return the user
+    //return the user
     const user = result.rows[0];
-
-    return;
+    return user;
   }
   static async fetchUserByEmail(email) {
     if (!email) {
       throw new BadRequestError("No email provided");
     }
-    const query = `SELECT * FROM users WHERE email = $1`;
+
+    const query = "SELECT * FROM users WHERE email = $1";
     const result = await db.query(query, [email.toLowerCase()]);
     const user = result.rows[0];
     return user;
   }
 }
+
 module.exports = User;
